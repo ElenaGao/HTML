@@ -7,3 +7,10 @@
 @file: tcpclient.py
 @date: 2020/7/18
 """
+import socket
+
+
+def get_client():
+    client = socket.socket()
+    client.connect(('127.0.0.1', 8080))
+    return client
