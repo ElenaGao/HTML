@@ -58,15 +58,88 @@ def login(client):
 
 
 def upload_movie(client):
-    pass
+    while True:
+        movie_list = common.get_upload_movie_list()
+        if not movie_list:
+            print('暂无可上传的影片')
+        for i, m in enumerate(movie_list):
+            print(f'{i + 1} : {m}')
+
+        choice = input('please choice movie num to upload:>>>').strip()
+        if choice == 'q': break
+        if choice.isdigit():
+            choice = int(choice)
+            if choice in range(1, len(movie_list) + 1):
+                movie_path = os.path.join(settings.BASE_MOVIE_PATH, movie_list[choice - 1])
+                movie_md5 = common.get_file_md5(movie_path)
+                # 先用md5去服务端校验是否已有相应视频存在
+                send_dic = {'type': 'check_movie', 'session': user_dic['session'], 'file_md5': movie_md5}
+                back_dic = common.send_back(client, send_dic)
+                if back_dic['flag']:
+                    is_free = input('please choice free or not free(y/n)>>>:').strip()
+                    is_free = 1 if is_free == 'y' else 0
+                    # 文件大小
+                    file_size = os.path.getsize(movie_path)
+                    send_dic = {'type': 'upload_movie', 'session': user_dic['session'],
+                                'file_name': movie_list[choice - 1],
+                                'file_size': file_size, 'file_md5': movie_md5, 'is_free': is_free
+                                }
+                    back_dic = common.send_back(client, send_dic, movie_path)
+                    if back_dic['flag']:
+                        print(back_dic['msg'])
+                        break
+                    else:
+                        print(back_dic['msg'])
+                else:
+                    print(back_dic['msg'])
+            else:
+                print('choice not in range')
+        else:
+            print('please input number')
 
 
 def delete_movie(client):
-    pass
+    while True:
+        # 先查询出所有没有被删除的电影列表
+        send_dic = {"type": 'get_movie_list', 'session': user_dic['session'],
+                    'movie_type': 'all'}  # 返回的电影列表可以全部是收费，全部是免费，收费免费都有
+        back_dic = common.send_back(client, send_dic)
+        if back_dic['flag']:
+            movie_list = back_dic.get['movie_list']
+            for i, m in enumerate(movie_list):
+                print("%s:%s-%s" % (i + 1, m[0], m[1]))
+            choice = input('please choice movie number to delete:>>>').strip()
+            if choice == 'q': break
+            if choice.isdigit():
+                choice = int(choice)
+                if choice in range(1, len(choice) + 1):
+                    send_dic = {'type': 'delete_movie', 'session': user_dic['session'],
+                                'delete_movie_id': movie_list[choice - 1][2]}
+                    back_dic = common.send_back(client, send_dic)
+                    if back_dic['flag']:
+                        print(back_dic['msg'])
+                        break
+                    else:
+                        print(back_dic['msg'])
+                else:
+                    print('choice not in range')
+            else:
+                print('choice must be a number')
+        else:
+            print(back_dic['msg'])
 
 
 def release_notice(client):
-    pass
+    while True:
+        title = input('please input notice tilte:>>>>').strip()
+        content = input('please input notice content:>>>').strip()
+        send_dic = {'type': "release_note", 'title': title, 'content': content, 'session': user_dic['session']}
+        back_dic = common.send_back(client, send_dic)
+        if back_dic['flag']:
+            print(back_dic['msg'])
+            break
+        else:
+            print(back_dic['msg'])
 
 
 func_dict = {
